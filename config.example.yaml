@@ -1,0 +1,70 @@
+# SLA Sentinel configuration.
+#
+# No secrets belong in this file. The Slack webhook URL (if you use Slack
+# alerting) is read from the environment variable named below, never from
+# here.
+
+# Rolling window, in hours, used for the default SLA metric calculations
+# shown on the dashboard and returned by /api/integrations.
+window_hours: 24
+
+# Minimum minutes between repeat alerts for the *same* breach (same
+# integration + same metric). Prevents alert spam when an outage persists
+# across many probe cycles.
+breach_cooldown_minutes: 60
+
+alerts:
+  # "log" (default) just logs breaches to stdout/stderr.
+  # "slack" additionally posts to a Slack incoming webhook.
+  mode: log
+  # Name of the environment variable holding the Slack webhook URL.
+  # Only read if mode is "slack". Never commit the actual URL.
+  slack_webhook_env: SLACK_WEBHOOK_URL
+
+# Where the SQLite database lives. Overridable with SLA_SENTINEL_DB_PATH.
+db_path: data/sla_sentinel.db
+
+integrations:
+  - name: payments-api
+    url: http://localhost:9100/payments/health
+    method: GET
+    expected_status: 200
+    timeout_seconds: 5
+    interval_seconds: 60
+    sla:
+      uptime_pct: 99.5
+      p95_latency_ms: 400
+      error_rate_pct: 1.0
+
+  - name: shipping-api
+    url: http://localhost:9100/shipping/health
+    method: GET
+    expected_status: 200
+    timeout_seconds: 5
+    interval_seconds: 60
+    sla:
+      uptime_pct: 99.0
+      p95_latency_ms: 600
+      error_rate_pct: 2.0
+
+  - name: inventory-api
+    url: http://localhost:9100/inventory/health
+    method: GET
+    expected_status: 200
+    timeout_seconds: 5
+    interval_seconds: 60
+    sla:
+      uptime_pct: 99.9
+      p95_latency_ms: 300
+      error_rate_pct: 0.5
+
+  - name: auth-api
+    url: http://localhost:9100/auth/health
+    method: GET
+    expected_status: 200
+    timeout_seconds: 5
+    interval_seconds: 60
+    sla:
+      uptime_pct: 99.9
+      p95_latency_ms: 250
+      error_rate_pct: 0.5
