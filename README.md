@@ -250,7 +250,7 @@ documented template).
 | `breach_cooldown_minutes` | Minimum minutes between repeat alerts for the same integration + metric | `60` |
 | `alerts.mode` | `log` or `slack` | `log` |
 | `alerts.slack_webhook_env` | Name of the env var holding the Slack webhook URL (never the URL itself) | `SLACK_WEBHOOK_URL` |
-| `db_path` | SQLite file path (overridable with `SLA_SENTINEL_DB_PATH`) | `data/sla_sentinel.db` |
+| `db_path` | SQLite file path; a relative path is resolved against the config file's directory (overridable with `SLA_SENTINEL_DB_PATH`) | `data/sla_sentinel.db` |
 | `integrations[].name` | Integration display name | — |
 | `integrations[].url` | Endpoint to probe | — |
 | `integrations[].method` | HTTP method | `GET` |

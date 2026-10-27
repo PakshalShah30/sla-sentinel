@@ -6,6 +6,7 @@ script so all three exercise exactly the same logic.
 
 from __future__ import annotations
 
+import math
 import sqlite3
 from datetime import datetime, timezone
 from typing import Optional
@@ -95,22 +96,33 @@ def integration_summary(
     }
 
 
+# Longest window the API will compute over. Anything larger (or non-positive,
+# or non-finite) falls back to the configured default rather than producing
+# an empty "all green" result or overflowing timedelta.
+MAX_WINDOW_HOURS = 366 * 24.0
+
+
 def parse_window(window: str, default_hours: float) -> float:
     """Parse a query-string window like '24h', '7d', '90m' into hours.
-    Falls back to `default_hours` for an empty or unparseable value."""
+    Falls back to `default_hours` for an empty, unparseable, non-positive,
+    non-finite, or longer-than-MAX_WINDOW_HOURS value."""
     if not window:
         return default_hours
     window = window.strip().lower()
     try:
         if window.endswith("h"):
-            return float(window[:-1])
-        if window.endswith("d"):
-            return float(window[:-1]) * 24.0
-        if window.endswith("m"):
-            return float(window[:-1]) / 60.0
-        return float(window)
+            hours = float(window[:-1])
+        elif window.endswith("d"):
+            hours = float(window[:-1]) * 24.0
+        elif window.endswith("m"):
+            hours = float(window[:-1]) / 60.0
+        else:
+            hours = float(window)
     except ValueError:
         return default_hours
+    if not math.isfinite(hours) or hours <= 0 or hours > MAX_WINDOW_HOURS:
+        return default_hours
+    return hours
 
 
 def latency_series(conn: sqlite3.Connection, integration_name: str, window_hours: float) -> list[dict]:
