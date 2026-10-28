@@ -14,7 +14,10 @@ from typing import Optional
 
 import yaml
 
-DEFAULT_CONFIG_PATH = os.environ.get("SLA_SENTINEL_CONFIG", "config.yaml")
+# Default to the repo-root config.yaml so the app and scripts work no matter
+# which directory they're launched from. SLA_SENTINEL_CONFIG overrides it.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_CONFIG_PATH = os.environ.get("SLA_SENTINEL_CONFIG", os.path.join(BASE_DIR, "config.yaml"))
 
 
 @dataclass
@@ -88,7 +91,12 @@ def load_config(path: str = None) -> AppConfig:
             )
         )
 
-    db_path = os.environ.get("SLA_SENTINEL_DB_PATH", raw.get("db_path", "data/sla_sentinel.db"))
+    db_path = os.environ.get("SLA_SENTINEL_DB_PATH")
+    if not db_path:
+        # A relative db_path in the YAML is relative to the config file, not cwd.
+        db_path = raw.get("db_path", "data/sla_sentinel.db")
+        if not os.path.isabs(db_path):
+            db_path = os.path.join(os.path.dirname(os.path.abspath(path)), db_path)
 
     return AppConfig(
         window_hours=float(raw.get("window_hours", 24)),

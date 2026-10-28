@@ -179,7 +179,8 @@ def replay_breach_detection(conn: sqlite3.Connection, config: AppConfig, start: 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--days", type=int, default=5, help="days of synthetic history to generate")
-    parser.add_argument("--config", type=str, default=os.environ.get("SLA_SENTINEL_CONFIG", "config.yaml"))
+    parser.add_argument("--config", type=str, default=None,
+                        help="config file (default: $SLA_SENTINEL_CONFIG or the repo-root config.yaml)")
     args = parser.parse_args()
 
     config = load_config(args.config)

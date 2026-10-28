@@ -25,6 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DASHBOARD_PATH = BASE_DIR / "static" / "dashboard.html"
 
 config = load_config()
+
+# The prober runs on the event loop thread and owns this connection. API
+# routes are sync and run in FastAPI's threadpool, so each request opens its
+# own short-lived connection instead of sharing this one across threads.
 conn = dbmod.connect(config.db_path)
 dbmod.init_db(conn)
 
@@ -55,24 +59,27 @@ def health():
 
 @app.get("/api/integrations")
 def api_integrations():
-    return [service.integration_summary(conn, config, integ) for integ in config.integrations]
+    with dbmod.get_conn(config.db_path) as req_conn:
+        return [service.integration_summary(req_conn, config, integ) for integ in config.integrations]
 
 
 @app.get("/api/metrics")
 def api_metrics(window: str = Query(default="24h", description="e.g. 1h, 24h, 7d")):
     window_hours = service.parse_window(window, config.window_hours)
     result = []
-    for integ in config.integrations:
-        summary = service.integration_summary(conn, config, integ, window_hours=window_hours)
-        summary["latency_series"] = service.latency_series(conn, integ.name, window_hours)
-        result.append(summary)
+    with dbmod.get_conn(config.db_path) as req_conn:
+        for integ in config.integrations:
+            summary = service.integration_summary(req_conn, config, integ, window_hours=window_hours)
+            summary["latency_series"] = service.latency_series(req_conn, integ.name, window_hours)
+            result.append(summary)
     return {"window": window, "window_hours": window_hours, "integrations": result}
 
 
 @app.get("/api/breaches")
 def api_breaches(limit: int = Query(default=50, ge=1, le=500)):
-    rows = dbmod.fetch_breaches(conn, limit=limit)
-    return [dict(row) for row in rows]
+    with dbmod.get_conn(config.db_path) as req_conn:
+        rows = dbmod.fetch_breaches(req_conn, limit=limit)
+        return [dict(row) for row in rows]
 
 
 @app.get("/", response_class=HTMLResponse)

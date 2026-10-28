@@ -7,7 +7,7 @@ Run with:  uvicorn mock_target.app:app --port 9100
 Endpoints (mirrors config.yaml):
   GET /payments/health   - fast and reliable
   GET /shipping/health   - occasionally slow (simulated latency degradation)
-  GET /inventory/health  - occasionally errors/times out (simulated flakiness)
+  GET /inventory/health  - occasionally returns 503 (simulated flakiness)
   GET /auth/health       - fast and reliable
 """
 
